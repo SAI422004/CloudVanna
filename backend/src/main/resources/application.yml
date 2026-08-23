@@ -1,0 +1,22 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: salesforce-crud
+
+salesforce:
+  client-id: ${SALESFORCE_CLIENT_ID}
+  client-secret: ${SALESFORCE_CLIENT_SECRET}
+  redirect-uri: ${SALESFORCE_REDIRECT_URI:http://localhost:8080/api/auth/callback}
+  login-url: ${SALESFORCE_LOGIN_URL:https://login.salesforce.com}
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
+logging:
+  level:
+    com.example.salesforcecrud: DEBUG
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

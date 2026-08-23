@@ -1,0 +1,36 @@
+.delete-modal {
+  max-width: 420px;
+}
+
+.delete-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.delete-message {
+  margin: 0 0 0.5rem;
+  color: #475569;
+  font-size: 0.9375rem;
+}
+
+.delete-id {
+  margin: 0 0 0.5rem;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.delete-warning {
+  margin: 0 0 1.25rem;
+  color: #dc2626;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
