@@ -1,325 +1,219 @@
-# Salesforce CRUD Application
+# CloudVanna — Salesforce CRUD Web Application
 
-A full-stack web application for performing CRUD operations on Salesforce objects using OAuth 2.0 authentication and the Salesforce REST API.
-
-## Features
-
-- **OAuth 2.0 Authentication** — Secure Salesforce login with server-side token management
-- **5 Salesforce Objects** — Account, Contact, Lead, Opportunity, Case
-- **Full CRUD** — Create, Read, View, Update, Delete operations
-- **Dynamic Forms** — Fields and forms are driven by object metadata configuration
-- **Infinite Scroll** — Cursor-based pagination loading 20 records at a time using `nextRecordsUrl`
-- **Input Validation** — Client-side and server-side field validation
-- **Error Handling** — Global exception handling with clean API error responses
-- **Security** — Backend object whitelist, field sanitization, no secrets in frontend
+A full-stack, production-ready web application for performing CRUD operations on standard Salesforce objects using Salesforce OAuth 2.0 and the Salesforce REST API.
 
 ## Architecture
 
-```
-┌──────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   React +    │────▶│  Spring Boot     │────▶│   Salesforce     │
-│   Vite       │◀────│  REST API        │◀────│   REST API       │
-│   (Frontend) │     │  (Backend)       │     │   (Data Store)   │
-└──────────────┘     └──────────────────┘     └──────────────────┘
-     :5173                :8080                  login.salesforce.com
+```text
+GitHub
+   │
+   ├── frontend/
+   │       ↓
+   │    Vercel
+   │       ↓
+   │    React + Vite (SPA)
+   │
+   └── backend/
+           ↓
+        Render
+           ↓
+      Spring Boot (Java 21)
+           ↓
+     Salesforce OAuth 2.0 / REST API
 ```
 
-### Backend Flow
+### Flow Breakdown
+- **Frontend Layer**: React 19 + Vite SPA communicating via configured environment URL (`VITE_API_URL`).
+- **Backend Layer**: Spring Boot 3.3.7 providing REST APIs, session management, dynamic PORT binding (`${PORT:8080}`), and sanitized proxy calls to Salesforce.
+- **Authentication**: Salesforce OAuth 2.0 (External Client App / Connected App) with server-side token storage in HTTP sessions.
+- **Salesforce REST API**: Centralized client performing SOQL queries, pagination with cursors, record creation, updates, and deletes.
 
-```
-Controller → Service → SalesforceRestClient → Salesforce REST API
-```
+---
 
-### Frontend Flow
+## Features
 
-```
-App → Pages → Components → API Service → Backend
-```
+- **Salesforce Standard Objects**: Account, Contact, Lead, Opportunity, Case.
+- **Central Dropdown & Dynamic Fields**: Dynamic field schemas (5 to 10 curated fields per object) driven by backend metadata.
+- **Full CRUD Support**: Create, Read (View Modal), Update (Edit Modal), Delete (with confirmation dialog).
+- **Cursor-Based Pagination**: 20 records per page with infinite scroll loading using Salesforce `nextRecordsUrl`.
+- **OAuth 2.0 Security**: Sensitive tokens never exposed to the frontend; secure HTTP-only session cookies.
+- **Health Check Endpoint**: `/api/health` for uptime monitoring and deployment verification.
+
+---
 
 ## Tech Stack
 
-| Layer        | Technology          | Version   |
-|-------------|--------------------|-----------| 
-| **Runtime**  | Java               | 21 LTS    |
-| **Backend**  | Spring Boot        | 3.3.7     |
-| **Security** | Spring Security    | 6.3.x     |
-| **HTTP**     | WebClient (WebFlux)| 6.1.x     |
-| **Build**    | Maven              | 3.9.9     |
-| **Frontend** | React              | 18.x      |
-| **Bundler**  | Vite               | 5.x / 6.x|
-| **Runtime**  | Node.js            | 18+       |
-
-## Prerequisites
-
-- Java 21 LTS
-- Node.js 18+
-- Salesforce Developer Org
-- Salesforce External Client App (Connected App)
+| Component | Technology | Version |
+|---|---|---|
+| **Runtime** | Java LTS | 21 |
+| **Backend Framework** | Spring Boot | 3.3.7 |
+| **Security & Session** | Spring Security / Session | 6.3.x |
+| **HTTP Client** | Spring WebClient (WebFlux) | 6.1.x |
+| **Build Tool** | Apache Maven | 3.9.x |
+| **Frontend Framework** | React | 19.x |
+| **Build Tool / Bundler** | Vite | 8.x |
+| **Hosting (Frontend)** | Vercel | Production |
+| **Hosting (Backend)** | Render | Production Web Service |
 
 ---
 
-## Salesforce Setup
+## Local Development Setup
 
-### 1. Create a Developer Org
+### 1. Prerequisites
+- Java 21 LTS installed and on PATH (`java -version`)
+- Node.js 18+ and npm installed (`node -v`, `npm -v`)
+- Salesforce Developer Org with an External Client App / Connected App
 
-1. Go to [developer.salesforce.com/signup](https://developer.salesforce.com/signup)
-2. Sign up for a free Developer Edition org
-3. Verify your email and log in
-
-### 2. Create an External Client App (Connected App)
-
-1. In Salesforce Setup, search for **App Manager**
-2. Click **New Connected App**
-3. Fill in:
-   - **Connected App Name**: `Salesforce CRUD App`
-   - **API Name**: auto-generated
-   - **Contact Email**: your email
-4. Under **API (Enable OAuth Settings)**:
-   - ✅ Enable OAuth Settings
-   - **Callback URL**: `http://localhost:8080/api/auth/callback`
-   - **Selected OAuth Scopes**:
-     - `Full access (full)`
-     - `Perform requests at any time (refresh_token, offline_access)`
-   - ✅ Require Proof Key for Code Exchange (PKCE) — **uncheck** this
-5. Click **Save** and wait 2-10 minutes for propagation
-6. Under the connected app, click **Manage Consumer Details**
-7. Copy the **Consumer Key** (Client ID) and **Consumer Secret** (Client Secret)
-
-### 3. Set Trusted IP Ranges (Optional)
-
-For development, you may need to relax IP restrictions:
-1. Go to the connected app → **Manage**
-2. Set **IP Relaxation** to "Relax IP restrictions"
-
----
-
-## Environment Variables
-
-Create a `.env` file in the project root (copy from `.env.example`):
-
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env` in the root folder (or backend/frontend folders):
 ```bash
 cp .env.example .env
 ```
 
-Fill in your values:
-
+Set your local values in `.env`:
 ```env
-SALESFORCE_CLIENT_ID=your_consumer_key
-SALESFORCE_CLIENT_SECRET=your_consumer_secret
+SALESFORCE_CLIENT_ID=your_salesforce_client_id
+SALESFORCE_CLIENT_SECRET=your_salesforce_client_secret
 SALESFORCE_REDIRECT_URI=http://localhost:8080/api/auth/callback
 SALESFORCE_LOGIN_URL=https://login.salesforce.com
 FRONTEND_URL=http://localhost:5173
 SERVER_PORT=8080
+VITE_API_URL=http://localhost:8080
 ```
 
-> ⚠️ **Never commit the `.env` file.** It is already in `.gitignore`.
+> ⚠️ **Security Notice**: Never commit your real `.env` file or Salesforce credentials to Git. `.env` is ignored by `.gitignore`.
 
----
-
-## Running Locally
-
-### Backend
-
+### 3. Start Backend
 ```bash
 cd backend
-
-# Set JAVA_HOME if not already set
-# Windows: set JAVA_HOME=C:\Program Files\Java\jdk-21
-# Linux/Mac: export JAVA_HOME=/path/to/jdk-21
-
-# Load env vars from root .env file
-# Windows PowerShell:
-Get-Content ..\.env | ForEach-Object { if ($_ -match '^([^#][^=]+)=(.*)$') { [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2]) } }
-
-# Run
+# Windows:
 .\mvnw.cmd spring-boot:run
-# or on Linux/Mac: ./mvnw spring-boot:run
-```
 
+# Linux/macOS:
+./mvnw spring-boot:run
+```
 The backend starts at `http://localhost:8080`.
 
-### Frontend
-
+### 4. Start Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
 The frontend starts at `http://localhost:5173`.
 
-### Testing the Flow
+---
 
-1. Open `http://localhost:5173` in your browser
-2. Click **Login with Salesforce**
-3. Log in with your Salesforce Developer Org credentials
-4. Authorize the application
-5. Select an object from the dropdown (e.g., Account)
-6. View, Create, Edit, and Delete records
+## Production Deployment Guide
+
+### A. Deploy Backend to Render
+
+1. Create a new **Web Service** on [Render](https://render.com).
+2. Connect your GitHub repository.
+3. Configure the service settings:
+   - **Name**: `cloudvanna-backend` (or your preferred name)
+   - **Root Directory**: `backend`
+   - **Runtime**: `Java` (Java 21) or `Docker`
+   - **Build Command**:
+     ```bash
+     mvn clean package -DskipTests
+     ```
+     *(or `./mvnw clean package -DskipTests`)*
+   - **Start Command**:
+     ```bash
+     java -jar target/salesforce-crud-0.0.1-SNAPSHOT.jar
+     ```
+   - **Health Check Path**: `/api/health`
+4. Add the following **Environment Variables** in Render Dashboard:
+   | Variable | Value / Description |
+   |---|---|
+   | `SALESFORCE_CLIENT_ID` | Your Salesforce Client ID |
+   | `SALESFORCE_CLIENT_SECRET` | Your Salesforce Client Secret |
+   | `SALESFORCE_REDIRECT_URI` | `https://YOUR-BACKEND.onrender.com/api/auth/callback` |
+   | `SALESFORCE_LOGIN_URL` | `https://login.salesforce.com` |
+   | `FRONTEND_URL` | `https://YOUR-FRONTEND.vercel.app` *(add local URL `http://localhost:5173` if testing against local frontend)* |
+   | `SESSION_COOKIE_SAMESITE` | `none` *(required for cross-origin HTTPS cookies between Vercel and Render)* |
+   | `SESSION_COOKIE_SECURE` | `true` *(required when SameSite=None)* |
 
 ---
 
-## API Documentation
+### B. Deploy Frontend to Vercel
+
+1. Import your GitHub repository into [Vercel](https://vercel.com).
+2. Configure the project:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+3. Add the **Environment Variable** in Vercel Project Settings:
+   | Variable | Value |
+   |---|---|
+   | `VITE_API_URL` | `https://YOUR-BACKEND.onrender.com` |
+4. Deploy! Vercel will build the SPA and use `vercel.json` rewrites for client-side routing.
+
+---
+
+### C. Salesforce External Client App Configuration (Post-Deployment)
+
+Once Render assigns your live backend URL (`https://YOUR-BACKEND.onrender.com`), update your Salesforce External Client App / Connected App:
+
+1. In Salesforce Setup, navigate to **App Manager** (or **External Client App Manager**).
+2. Locate your app and click **Edit** (or **Manage OAuth Settings**).
+3. Under **Callback URL**, add the production callback URL on a new line (or separated by comma/newline):
+   ```text
+   http://localhost:8080/api/auth/callback
+   https://YOUR-BACKEND.onrender.com/api/auth/callback
+   ```
+4. Ensure the required OAuth Scopes are enabled:
+   - `Manage user data via APIs (api)` or `Full access (full)`
+   - `Perform requests at any time (refresh_token, offline_access)`
+5. Save the configuration (Salesforce changes take 2-10 minutes to propagate).
+
+---
+
+## API Reference
+
+### Health Check
+- `GET /api/health` — Returns `{"status":"UP","service":"CloudVanna Backend"}`
 
 ### Authentication
+- `GET /api/auth/login` — Initiates Salesforce OAuth 2.0 flow
+- `GET /api/auth/callback` — Handles OAuth callback and session creation
+- `GET /api/auth/status` — Returns `{"authenticated": true/false}`
+- `POST /api/auth/logout` — Invalidates session
 
-| Method | Endpoint            | Description                    |
-|--------|--------------------|---------------------------------|
-| GET    | `/api/auth/login`   | Redirect to Salesforce login   |
-| GET    | `/api/auth/callback` | OAuth callback handler        |
-| POST   | `/api/auth/logout`  | Invalidate session             |
-| GET    | `/api/auth/status`  | Check authentication status    |
-
-### Objects
-
-| Method | Endpoint                          | Description              |
-|--------|-----------------------------------|--------------------------|
-| GET    | `/api/objects`                     | List supported objects   |
-| GET    | `/api/objects/{name}/metadata`     | Get field metadata       |
-
-### Records
-
-| Method | Endpoint                          | Description                          |
-|--------|-----------------------------------|--------------------------------------|
-| GET    | `/api/records/{object}`            | Query records (paginated, 20/page)  |
-| POST   | `/api/records/{object}`            | Create a record                      |
-| GET    | `/api/records/{object}/{id}`       | Get a single record                  |
-| PATCH  | `/api/records/{object}/{id}`       | Update a record                      |
-| DELETE | `/api/records/{object}/{id}`       | Delete a record                      |
-
-**Pagination**: Pass `?cursor=<nextPageUrl>` for subsequent pages.
-
-### Supported Objects
-
-- `Account` — Id, Name, Phone, Website, Industry, Type, BillingCity, AnnualRevenue
-- `Contact` — Id, FirstName, LastName, Email, Phone, Department, Title, MailingCity
-- `Lead` — Id, FirstName, LastName, Company, Email, Phone, Status, LeadSource
-- `Opportunity` — Id, Name, Amount, StageName, CloseDate, Probability, Type
-- `Case` — Id, CaseNumber, Subject, Status, Priority, Origin, Description, Type
+### Metadata & Records
+- `GET /api/objects` — Lists supported Salesforce standard objects
+- `GET /api/objects/{objectName}/metadata` — Retrieves field metadata
+- `GET /api/records/{objectName}` — Returns first 20 records (supports `?cursor=` for next 20)
+- `GET /api/records/{objectName}/{id}` — Retrieves a single record by ID
+- `POST /api/records/{objectName}` — Creates a new record
+- `PATCH /api/records/{objectName}/{id}` — Updates record fields
+- `DELETE /api/records/{objectName}/{id}` — Deletes record
 
 ---
 
-## Testing
+## Verification & Testing
 
-### Backend Tests
-
+### Backend Test Suite (37 Unit Tests)
 ```bash
 cd backend
 .\mvnw.cmd test
-# or on Linux/Mac: ./mvnw test
+# or: ./mvnw test
 ```
 
-Tests include:
-- `SalesforceObjectConfigTest` — Object whitelist validation
-- `RecordServiceTest` — CRUD logic, validation, sanitization
-- `GlobalExceptionHandlerTest` — Error response mapping
-- `OAuthServiceTest` — OAuth URL building and edge cases
-- `ObjectControllerTest` — Controller endpoint tests
-
-### Frontend Build Validation
-
-```bash
-cd frontend
-npx vite build
-```
-
-### Manual Testing
-
-1. Authenticate with a real Salesforce Developer Org
-2. Test CRUD on all 5 objects
-3. Test infinite scroll with > 20 records
-4. Test error states (disconnect network, invalid data)
-5. Test form validation (missing required fields)
-
----
-
-## Deployment
-
-### Production Build
-
-**Backend:**
-```bash
-cd backend
-.\mvnw.cmd clean package -DskipTests
-java -jar target/salesforce-crud-0.0.1-SNAPSHOT.jar
-```
-
-**Frontend:**
+### Frontend Build Test
 ```bash
 cd frontend
 npm run build
-# Serve the dist/ folder with any static file server
-```
-
-### Docker
-
-```bash
-docker-compose up --build
 ```
 
 ---
 
-## Troubleshooting
-
-| Issue | Solution |
-|-------|---------|
-| `SALESFORCE_CLIENT_ID` not set | Create `.env` from `.env.example` and set the values |
-| OAuth callback fails | Verify redirect URI matches exactly in Salesforce Connected App |
-| CORS errors | Check `FRONTEND_URL` env var matches your frontend URL |
-| 401 Unauthorized | Session may have expired. Re-login. |
-| "Unsupported object" error | Only Account, Contact, Lead, Opportunity, Case are supported |
-| Java not found | Set `JAVA_HOME` to your JDK 21 installation path |
-| Maven not found | Use `.\mvnw.cmd` (Windows) or `./mvnw` (Linux/Mac) |
-
----
-
-## Security Notes
-
-- Salesforce Client Secret, Access Token, and Refresh Token are **never** sent to the frontend
-- All tokens are stored server-side in the HTTP session
-- Frontend communicates with the backend using session cookies (`credentials: 'include'`)
-- Backend validates all object names against a hardcoded whitelist
-- All field inputs are sanitized to only allow whitelisted editable fields
-- CORS is configured to only allow the frontend origin
-- No credentials or tokens are committed to Git
-- Error responses never expose stack traces or internal details
-
----
-
-## Project Structure
-
-```
-salesforce-crud-app/
-├── backend/
-│   ├── src/main/java/com/example/salesforcecrud/
-│   │   ├── config/          # SalesforceConfig, SecurityConfig, ObjectConfig
-│   │   ├── controller/      # AuthController, ObjectController, RecordController
-│   │   ├── service/         # OAuthService, RecordService
-│   │   ├── client/          # SalesforceRestClient
-│   │   ├── dto/             # ErrorResponse, FieldMetadata, PagedRecordResponse
-│   │   ├── exception/       # GlobalExceptionHandler, custom exceptions
-│   │   ├── model/           # SalesforceToken
-│   │   └── util/            # SessionUtil
-│   ├── src/test/java/       # Unit tests
-│   ├── pom.xml
-│   └── mvnw.cmd
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/           # LoginPage, DashboardPage
-│   │   ├── hooks/           # useAuth, useRecords
-│   │   ├── services/        # API service layer
-│   │   └── App.jsx
-│   ├── package.json
-│   └── vite.config.js
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-└── README.md
-```
-
----
-
-## License
-
-This project is for educational and demonstration purposes.
+## Security Best Practices Implemented
+- Zero credentials or tokens exposed in frontend client bundle.
+- Server-side token storage in secure HTTP sessions.
+- Dynamic CORS whitelisting supporting production & local environments.
+- Object & field whitelist validation to prevent injection or unauthorized field mutations.
+- Protected error handling preventing stack traces or sensitive Salesforce internals leakage.

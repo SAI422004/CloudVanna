@@ -25,11 +25,22 @@ public class AuthController {
 
     private final OAuthService oAuthService;
 
-    @Value("${app.frontend-url}")
+    @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     public AuthController(OAuthService oAuthService) {
         this.oAuthService = oAuthService;
+    }
+
+    private String getRedirectFrontendUrl() {
+        if (frontendUrl == null || frontendUrl.isBlank()) {
+            return "http://localhost:5173";
+        }
+        String target = frontendUrl.split(",")[0].trim();
+        if (target.endsWith("/")) {
+            target = target.substring(0, target.length() - 1);
+        }
+        return target;
     }
 
     /**
@@ -58,16 +69,18 @@ public class AuthController {
             HttpSession session,
             jakarta.servlet.http.HttpServletResponse response) throws IOException {
 
+        String redirectBase = getRedirectFrontendUrl();
+
         // Handle user rejection or Salesforce errors
         if (error != null) {
             log.warn("Salesforce OAuth error: {} - {}", error, errorDescription);
-            response.sendRedirect(frontendUrl + "?auth_error=" + error);
+            response.sendRedirect(redirectBase + "?auth_error=" + error);
             return;
         }
 
         if (code == null || code.isBlank()) {
             log.warn("No authorization code received in callback");
-            response.sendRedirect(frontendUrl + "?auth_error=no_code");
+            response.sendRedirect(redirectBase + "?auth_error=no_code");
             return;
         }
 
@@ -78,10 +91,10 @@ public class AuthController {
             SalesforceToken token = oAuthService.exchangeCodeForToken(code, codeVerifier);
             session.setAttribute(SESSION_TOKEN_KEY, token);
             log.info("User authenticated successfully, redirecting to frontend");
-            response.sendRedirect(frontendUrl + "?auth_success=true");
+            response.sendRedirect(redirectBase + "?auth_success=true");
         } catch (Exception e) {
             log.error("OAuth callback failed: {}", e.getMessage());
-            response.sendRedirect(frontendUrl + "?auth_error=token_exchange_failed");
+            response.sendRedirect(redirectBase + "?auth_error=token_exchange_failed");
         }
     }
 

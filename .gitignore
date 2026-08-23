@@ -1,7 +1,14 @@
-# Environment
+# Environment files
 .env
 .env.*
 !.env.example
+*.env
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # Java / Maven
 target/
